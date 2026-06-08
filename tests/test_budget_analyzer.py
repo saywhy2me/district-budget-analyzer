@@ -1,5 +1,7 @@
 """Tests for the District Budget & Account Variance Analyzer."""
 
+import json
+
 import pandas as pd
 import pytest
 
@@ -11,6 +13,7 @@ from src.budget_analyzer import (
     fund_rollup,
     load_to_sqlite,
     main,
+    report_to_dict,
     status_counts,
     summarize,
     validate,
@@ -171,3 +174,28 @@ def test_main_fail_on_over_passes_when_within_budget(tmp_path):
     csv = _write_csv(tmp_path / "budget.csv", clean)
     rc = main(["--input", csv, "--out", str(tmp_path / "reports"), "--fail-on-over"])
     assert rc == 0
+
+
+def test_report_to_dict_is_json_serialisable():
+    conn = load_to_sqlite(validate(_frame()))
+    detail = flag_exceptions(compute_variance(conn), threshold=0.90)
+    rollup = fund_rollup(conn)
+    conn.close()
+    payload = report_to_dict(detail, rollup, summarize(validate(_frame())))
+    json.loads(json.dumps(payload))  # raises if numpy/NaN left unserialised
+
+    assert payload["summary"]["line_count"] == 3
+    assert payload["status_breakdown"] == {"OVER BUDGET": 1, "WATCH": 1, "OK": 1}
+    assert len(payload["fund_rollup"]) == 2          # two distinct funds
+    assert len(payload["lines"]) == 3
+    assert payload["lines"][0]["status"] in {"OVER BUDGET", "WATCH", "OK"}
+
+
+def test_main_json_emits_pure_valid_json(tmp_path, capsys):
+    csv = _write_csv(tmp_path / "budget.csv", _frame())
+    rc = main(["--input", csv, "--out", str(tmp_path / "reports"), "--json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)   # stdout must be JSON only
+    assert payload["summary"]["line_count"] == 3
+    assert set(payload["status_breakdown"]) == {"OVER BUDGET", "WATCH", "OK"}
+    assert "fund_rollup" in payload and "lines" in payload

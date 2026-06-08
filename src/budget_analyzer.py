@@ -16,6 +16,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
@@ -190,6 +191,26 @@ def format_fund_rollup(rollup: pd.DataFrame) -> str:
     return "\n".join(lines)
 
 
+def report_to_dict(detail: pd.DataFrame, rollup: pd.DataFrame, summary: Summary) -> dict:
+    """Assemble a JSON-serialisable view of the full report.
+
+    Uses pandas' ``to_json`` round-trip so numpy scalar types and NaN
+    (e.g. variance_pct on a zero-budget line) serialise cleanly to JSON.
+    """
+    return {
+        "summary": {
+            "line_count": summary.line_count,
+            "total_budget": summary.total_budget,
+            "total_actual": summary.total_actual,
+            "net_variance": summary.net_variance,
+            "net_variance_pct": round(summary.net_variance_pct, 2),
+        },
+        "status_breakdown": status_counts(detail),
+        "fund_rollup": json.loads(rollup.to_json(orient="records")),
+        "lines": json.loads(detail.to_json(orient="records")),
+    }
+
+
 def print_report(detail: pd.DataFrame, rollup: pd.DataFrame, summary: Summary) -> None:
     direction = "under" if summary.net_variance <= 0 else "over"
     print("\n=== District Budget Variance Summary ===")
@@ -270,7 +291,8 @@ def _highlight_flags(writer: "pd.ExcelWriter", detail: pd.DataFrame) -> None:
 # --------------------------------------------------------------------------- #
 # Orchestration / CLI
 # --------------------------------------------------------------------------- #
-def analyze(input_csv: str, out_dir: str, threshold: float) -> tuple[pd.DataFrame, Summary]:
+def analyze(input_csv: str, out_dir: str, threshold: float,
+            as_json: bool = False) -> tuple[pd.DataFrame, Summary]:
     raw = pd.read_csv(input_csv)
     clean = validate(raw)
     conn = load_to_sqlite(clean)
@@ -281,9 +303,14 @@ def analyze(input_csv: str, out_dir: str, threshold: float) -> tuple[pd.DataFram
         conn.close()
 
     summary = summarize(clean)
-    print_report(detail, rollup, summary)
     path = write_reports(detail, rollup, out_dir)
-    print(f"Report written to {path}")
+
+    if as_json:
+        # Pure JSON on stdout — nothing else printed, so it stays pipeable.
+        print(json.dumps(report_to_dict(detail, rollup, summary), indent=2))
+    else:
+        print_report(detail, rollup, summary)
+        print(f"Report written to {path}")
     return detail, summary
 
 
@@ -305,10 +332,16 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Exit non-zero (2) if any line is OVER BUDGET, for CI/automation gating.",
     )
+    parser.add_argument(
+        "--json",
+        dest="as_json",
+        action="store_true",
+        help="Emit a machine-readable JSON report on stdout instead of the text summary.",
+    )
     args = parser.parse_args(argv)
 
     try:
-        detail, _ = analyze(args.input, args.out, args.threshold)
+        detail, _ = analyze(args.input, args.out, args.threshold, as_json=args.as_json)
     except (ValidationError, FileNotFoundError) as exc:
         print(f"ERROR: {exc}")
         return 1

@@ -124,3 +124,7 @@ district-budget-analyzer/
 - For scheduled/CI use, add `--fail-on-over` to make the tool exit non-zero
   (code `2`) whenever any line is **OVER BUDGET**, so an automated fiscal check
   can fail the pipeline when an account breaches its adopted budget.
+- Add `--json` to emit the full report (summary, status breakdown, fund rollup,
+  and per-line detail) as machine-readable JSON on stdout instead of the text
+  summary — pipe it into a dashboard or another tool. The Excel/CSV files are
+  still written to `--out`.
