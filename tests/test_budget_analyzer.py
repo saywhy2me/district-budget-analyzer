@@ -7,6 +7,7 @@ from src.budget_analyzer import (
     ValidationError,
     compute_variance,
     flag_exceptions,
+    format_fund_rollup,
     fund_rollup,
     load_to_sqlite,
     main,
@@ -113,6 +114,35 @@ def test_fund_rollup_groups_by_fund():
     gf = rollup[rollup["fund"] == "01 General Fund"].iloc[0]
     assert gf["budget"] == 150000   # 100000 + 50000
     assert gf["actual"] == 150000   # 95000 + 55000
+
+
+def test_format_fund_rollup_lists_each_fund():
+    conn = load_to_sqlite(validate(_frame()))
+    rollup = fund_rollup(conn)
+    conn.close()
+    text = format_fund_rollup(rollup)
+    assert "FUND ROLLUP" in text
+    assert "01 General Fund" in text
+    assert "13 Cafeteria" in text
+    # header row + one row per fund (2 funds in the fixture)
+    assert len(text.splitlines()) == 4
+
+
+def test_format_fund_rollup_renders_negative_variance():
+    # Single fund, actual under budget -> variance should show with a minus sign.
+    df = pd.DataFrame(
+        {
+            "fund": ["01 General Fund"],
+            "account": [1000],
+            "description": ["Salaries"],
+            "budget": [100000],
+            "actual": [90000],
+        }
+    )
+    conn = load_to_sqlite(validate(df))
+    rollup = fund_rollup(conn)
+    conn.close()
+    assert "-$10,000.00" in format_fund_rollup(rollup)
 
 
 def test_summary_net_variance():

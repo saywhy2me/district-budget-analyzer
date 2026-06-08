@@ -169,7 +169,28 @@ def summarize(df: pd.DataFrame) -> Summary:
 # --------------------------------------------------------------------------- #
 # Reporting
 # --------------------------------------------------------------------------- #
-def print_report(detail: pd.DataFrame, summary: Summary) -> None:
+def _money(value: float) -> str:
+    """Format a signed dollar amount as -$1,234.56 / $1,234.56."""
+    return f"-${abs(value):,.2f}" if value < 0 else f"${value:,.2f}"
+
+
+def format_fund_rollup(rollup: pd.DataFrame) -> str:
+    """Render the per-fund budget/actual/variance rollup as an aligned text table."""
+    lines = [
+        "FUND ROLLUP",
+        f"  {'Fund':<26}{'Budget':>16}{'Actual':>16}{'Variance':>16}",
+    ]
+    for _, r in rollup.iterrows():
+        lines.append(
+            f"  {str(r['fund'])[:26]:<26}"
+            f"{_money(r['budget']):>16}"
+            f"{_money(r['actual']):>16}"
+            f"{_money(r['variance']):>16}"
+        )
+    return "\n".join(lines)
+
+
+def print_report(detail: pd.DataFrame, rollup: pd.DataFrame, summary: Summary) -> None:
     direction = "under" if summary.net_variance <= 0 else "over"
     print("\n=== District Budget Variance Summary ===")
     print(
@@ -189,6 +210,9 @@ def print_report(detail: pd.DataFrame, summary: Summary) -> None:
         f"{counts['WATCH']} WATCH | "
         f"{counts['OK']} OK\n"
     )
+
+    print(format_fund_rollup(rollup))
+    print()
 
     flagged = detail[detail["status"] != "OK"]
     if flagged.empty:
@@ -257,7 +281,7 @@ def analyze(input_csv: str, out_dir: str, threshold: float) -> tuple[pd.DataFram
         conn.close()
 
     summary = summarize(clean)
-    print_report(detail, summary)
+    print_report(detail, rollup, summary)
     path = write_reports(detail, rollup, out_dir)
     print(f"Report written to {path}")
     return detail, summary

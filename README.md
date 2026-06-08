@@ -80,6 +80,14 @@ California K-12 districts (General Fund, Cafeteria, etc.):
 === District Budget Variance Summary ===
 Lines analyzed: 12   |   Total budget: $9,930,000.00   |   Total actual: $9,714,800.00
 Net variance: $215,200.00 under budget (2.17%)
+Status breakdown: 3 OVER BUDGET | 7 WATCH | 2 OK
+
+FUND ROLLUP
+  Fund                                Budget          Actual        Variance
+  01 General Fund              $6,800,000.00   $6,605,000.00    -$195,000.00
+  13 Cafeteria Fund            $1,205,000.00   $1,161,300.00     -$43,700.00
+  14 Deferred Maintenance        $120,000.00      $98,500.00     -$21,500.00
+  40 Capital Outlay            $1,805,000.00   $1,850,000.00      $45,000.00
 
 FLAGGED FOR REVIEW
   [OVER BUDGET] 01 General Fund / 4300 Materials & Supplies  +$21,500.00 (+11.9%)
