@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Generated reports
+reports/
+
+# OS
+desktop.ini
+.DS_Store

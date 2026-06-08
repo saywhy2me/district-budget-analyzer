@@ -1,0 +1,13 @@
+fund,account,description,budget,actual
+01 General Fund,1000,Certificated Salaries,4200000,4050000
+01 General Fund,2000,Classified Salaries,1100000,1085000
+01 General Fund,3000,Employee Benefits,980000,962000
+01 General Fund,4300,Materials & Supplies,180000,201500
+01 General Fund,5800,Prof & Operating Svcs,250000,245500
+01 General Fund,6400,Equipment,90000,61000
+13 Cafeteria Fund,2000,Classified Salaries,210000,204000
+13 Cafeteria Fund,4700,Food,950000,905000
+13 Cafeteria Fund,4300,Supplies,45000,52300
+14 Deferred Maintenance,5600,Rentals & Repairs,120000,98500
+40 Capital Outlay,6200,Buildings,1500000,1490000
+40 Capital Outlay,6170,Land Improvements,305000,360000
