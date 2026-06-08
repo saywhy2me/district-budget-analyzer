@@ -9,6 +9,7 @@ from src.budget_analyzer import (
     flag_exceptions,
     fund_rollup,
     load_to_sqlite,
+    status_counts,
     summarize,
     validate,
 )
@@ -87,6 +88,16 @@ def test_watch_threshold_is_inclusive_boundary():
     detail = flag_exceptions(compute_variance(conn), threshold=0.90)
     conn.close()
     assert detail.set_index("account").loc[4700, "status"] == "WATCH"
+
+
+def test_status_counts_covers_all_statuses():
+    conn = load_to_sqlite(validate(_frame()))
+    detail = flag_exceptions(compute_variance(conn), threshold=0.90)
+    conn.close()
+    counts = status_counts(detail)
+    assert counts == {"OVER BUDGET": 1, "WATCH": 1, "OK": 1}
+    # Every known status key is present even when its count is zero.
+    assert set(counts) == {"OVER BUDGET", "WATCH", "OK"}
 
 
 def test_fund_rollup_groups_by_fund():

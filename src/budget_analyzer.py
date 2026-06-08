@@ -116,6 +116,16 @@ def flag_exceptions(df: pd.DataFrame, threshold: float = DEFAULT_WATCH_THRESHOLD
     return df
 
 
+# Report order, worst first, so a reviewer reads exceptions before OK lines.
+STATUS_ORDER = ["OVER BUDGET", "WATCH", "OK"]
+
+
+def status_counts(detail: pd.DataFrame) -> dict[str, int]:
+    """Count flagged lines per status, always including all known statuses."""
+    counts = detail["status"].value_counts().to_dict()
+    return {status: int(counts.get(status, 0)) for status in STATUS_ORDER}
+
+
 def fund_rollup(conn: sqlite3.Connection) -> pd.DataFrame:
     """Summarize budget, actual, and variance grouped by fund."""
     query = """
@@ -169,7 +179,15 @@ def print_report(detail: pd.DataFrame, summary: Summary) -> None:
     )
     print(
         f"Net variance: ${abs(summary.net_variance):,.2f} {direction} budget "
-        f"({abs(summary.net_variance_pct):.2f}%)\n"
+        f"({abs(summary.net_variance_pct):.2f}%)"
+    )
+
+    counts = status_counts(detail)
+    print(
+        "Status breakdown: "
+        f"{counts['OVER BUDGET']} OVER BUDGET | "
+        f"{counts['WATCH']} WATCH | "
+        f"{counts['OK']} OK\n"
     )
 
     flagged = detail[detail["status"] != "OK"]
