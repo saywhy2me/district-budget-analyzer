@@ -113,3 +113,6 @@ district-budget-analyzer/
   district financial data is included.
 - The `WATCH` threshold and output paths are configurable via command-line flags
   (`--threshold`, `--out`). Run `python -m src.budget_analyzer --help`.
+- For scheduled/CI use, add `--fail-on-over` to make the tool exit non-zero
+  (code `2`) whenever any line is **OVER BUDGET**, so an automated fiscal check
+  can fail the pipeline when an account breaches its adopted budget.

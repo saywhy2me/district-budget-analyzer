@@ -9,10 +9,16 @@ from src.budget_analyzer import (
     flag_exceptions,
     fund_rollup,
     load_to_sqlite,
+    main,
     status_counts,
     summarize,
     validate,
 )
+
+
+def _write_csv(path, frame):
+    frame.to_csv(path, index=False)
+    return str(path)
 
 
 def _frame():
@@ -115,3 +121,23 @@ def test_summary_net_variance():
     assert s.total_budget == 230000
     assert s.total_actual == 220000
     assert s.net_variance == -10000
+
+
+def test_main_returns_zero_without_fail_flag(tmp_path):
+    csv = _write_csv(tmp_path / "budget.csv", _frame())  # contains an OVER BUDGET line
+    rc = main(["--input", csv, "--out", str(tmp_path / "reports")])
+    assert rc == 0
+
+
+def test_main_fail_on_over_returns_two(tmp_path):
+    csv = _write_csv(tmp_path / "budget.csv", _frame())  # 4300 is over budget
+    rc = main(["--input", csv, "--out", str(tmp_path / "reports"), "--fail-on-over"])
+    assert rc == 2
+
+
+def test_main_fail_on_over_passes_when_within_budget(tmp_path):
+    clean = _frame()
+    clean["actual"] = [80000, 40000, 60000]  # every line comfortably under budget
+    csv = _write_csv(tmp_path / "budget.csv", clean)
+    rc = main(["--input", csv, "--out", str(tmp_path / "reports"), "--fail-on-over"])
+    assert rc == 0

@@ -276,13 +276,21 @@ def main(argv: list[str] | None = None) -> int:
         default=DEFAULT_WATCH_THRESHOLD,
         help="WATCH threshold as a fraction of budget (default 0.90).",
     )
+    parser.add_argument(
+        "--fail-on-over",
+        action="store_true",
+        help="Exit non-zero (2) if any line is OVER BUDGET, for CI/automation gating.",
+    )
     args = parser.parse_args(argv)
 
     try:
-        analyze(args.input, args.out, args.threshold)
+        detail, _ = analyze(args.input, args.out, args.threshold)
     except (ValidationError, FileNotFoundError) as exc:
         print(f"ERROR: {exc}")
         return 1
+
+    if args.fail_on_over and status_counts(detail)["OVER BUDGET"] > 0:
+        return 2
     return 0
 
 
